@@ -56,7 +56,7 @@ mkdir -p "$HOOKS" "$CMDS" "$BIN" "$STATE"
 
 install -m 0755 "$SRC/tabtint.sh"     "$HOOKS/tabtint.sh"
 install -m 0755 "$SRC/prompt-hook.sh" "$HOOKS/prompt-hook.sh"
-install -m 0755 "$SRC/tabtint"        "$BIN/tabtint"
+install -m 0755 "$SRC/bin/tabtint"    "$BIN/tabtint"
 
 if [ -f "$PALETTE" ]; then
   echo "keeping your existing palette at $PALETTE"
@@ -65,7 +65,9 @@ else
   echo "installed starter palette at $PALETTE"
 fi
 
-sed "s#__HOME__#$HOME#g" "$SRC/commands/tabtint.md" >"$CMDS/tabtint.md"
+# The command file ships pointing at ${CLAUDE_PLUGIN_ROOT} for the plugin install.
+# A manual install has no plugin root, so rewrite it to the real hooks path.
+sed "s#\${CLAUDE_PLUGIN_ROOT}#$HOOKS#g" "$SRC/commands/tabtint.md" >"$CMDS/tabtint.md"
 chmod 0644 "$CMDS/tabtint.md"
 
 [ -f "$SETTINGS" ] || echo '{}' >"$SETTINGS"

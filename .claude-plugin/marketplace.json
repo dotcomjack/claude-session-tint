@@ -1,0 +1,18 @@
+{
+  "name": "dotcomjack",
+  "owner": {
+    "name": "DotcomJack",
+    "url": "https://dotcomjack.com"
+  },
+  "description": "Tools by DotcomJack",
+  "plugins": [
+    {
+      "name": "claude-session-tint",
+      "source": "./",
+      "description": "Know which Claude Code session needs you. Tints a Terminal.app window by project and brightens it when a response lands unseen. Includes a UserPromptSubmit hook that runs an input-box command without invoking the model.",
+      "license": "MIT",
+      "homepage": "https://github.com/dotcomjack/claude-session-tint",
+      "keywords": ["terminal", "macos", "hooks", "multi-session"]
+    }
+  ]
+}
