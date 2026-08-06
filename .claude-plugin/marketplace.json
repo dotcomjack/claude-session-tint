@@ -12,7 +12,13 @@
       "description": "Know which Claude Code session needs you. Tints a Terminal.app window by project and brightens it when a response lands unseen. Includes a UserPromptSubmit hook that runs an input-box command without invoking the model.",
       "license": "MIT",
       "homepage": "https://github.com/dotcomjack/claude-session-tint",
-      "keywords": ["terminal", "macos", "hooks", "multi-session"]
+      "keywords": [
+        "terminal",
+        "macos",
+        "hooks",
+        "multi-session"
+      ],
+      "version": "1.2.0"
     }
   ]
 }

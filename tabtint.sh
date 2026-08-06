@@ -1,10 +1,10 @@
 #!/bin/bash
-# tabtint.sh  (drive it with the `tabcolor` command)
+# tabtint.sh  (drive it with the `tabtint` command)
 #
 # Purely cosmetic Terminal.app window coloring:
-#   1. You tag a window with a brand once      ->  tabcolor aianyone
-#   2. It wears that brand quietly at rest     ->  10% wash
-#   3. It lights up when a response lands      ->  34% wash
+#   1. You tag a window with a project once    ->  tabtint api
+#   2. It wears that color quietly at rest     ->  22% wash
+#   3. It lights up when a response lands      ->  48% wash
 #   4. It drops back the moment you focus it
 #
 # Terminal.app cannot color a TAB. Verified by enumerating every property on the
@@ -13,9 +13,13 @@
 # per-tab color is an iTerm2 / kitty / Ghostty capability.
 #
 # So this paints the window BODY, which is what shows in Mission Control and
-# cmd-tab. The tab bar stays grey. The only thing that reaches the tab bar is
-# the title text, which Claude Code owns; put an emoji in /rename if you want
-# color there.
+# cmd-tab. That works when a window holds ONE tab.
+#
+# In a MULTI-TAB window Terminal draws only the selected tab's body, so painting
+# a background tab is invisible exactly when you need it, and selecting the tab
+# clears it before you see it. There the signal moves to the one thing that does
+# reach the tab bar: a dot in front of the tab TITLE, stripped again the moment
+# you look. See the marker section below.
 #
 # Colors live in ~/.claude/tabtint-palette.conf. Nothing here inspects your work,
 # your files, or your transcripts. A window is whatever you said it was.
@@ -27,8 +31,9 @@
 #   watch  internal shared watcher
 #
 # Tuning:
-#   TABTINT_ATTN_PCT  brightness when unread  (default 34)
-#   TABTINT_IDLE_PCT  brightness at rest      (default 10)
+#   TABTINT_ATTN_PCT  brightness when unread  (default 48)
+#   TABTINT_IDLE_PCT  brightness at rest      (default 22)
+#   TABTINT_MARK      tab-bar marker glyph    (default ●)
 
 set -uo pipefail
 
@@ -175,6 +180,109 @@ end run
 EOS
 }
 
+# ------------------------------------------ tab-bar marker (shared windows) ---
+# Terminal draws only the SELECTED tab's body, so painting a background tab is
+# invisible exactly when it matters, and the watcher clears it the instant you
+# select it. For tabs that share a window the signal moves to the one thing that
+# reaches the tab bar: a dot in front of the title.
+#
+# U+2060 WORD JOINER is a zero-width sentinel. It renders as nothing and nothing
+# else in a terminal title emits it, so we can find our own marker without ever
+# storing the title. We STRIP, never restore: Claude Code owns the title and
+# rewrites it, so a saved copy would be stale on arrival and would clobber a
+# user's own /rename.
+WJ=$(printf '\xe2\x81\xa0')
+MARK="${TABTINT_MARK:-●}"
+
+# One Apple Event answering everything the Stop hook needs:
+#   ntabs <TAB> selected <TAB> focused <TAB> title
+#
+# `tab` inside a "tell application \"Terminal\"" block resolves to Terminal's tab
+# CLASS, not the tab character, and stringifies to the literal text "tab". Bind
+# the real character outside the tell block. Verified with od -c.
+tab_ctx() {
+  osa - "$1" <<'EOS'
+on run argv
+	set TB to tab
+	tell application "Terminal"
+		set fm to frontmost
+		repeat with i from 1 to (count of windows)
+			set w to item i of windows
+			set n to (count of tabs of w)
+			repeat with t in tabs of w
+				if tty of t is (item 1 of argv) then
+					set ttl to ""
+					try
+						set ttl to custom title of t
+					end try
+					return (n as string) & TB & ((selected of t) as string) & TB & ((fm and i is 1 and (selected of t)) as string) & TB & ttl
+				end if
+			end repeat
+		end repeat
+	end tell
+	return ""
+end run
+EOS
+}
+
+write_title() {
+  osa - "$1" "$2" <<'EOS'
+on run argv
+	tell application "Terminal"
+		repeat with w in windows
+			repeat with t in tabs of w
+				if tty of t is (item 1 of argv) then
+					set custom title of t to (item 2 of argv)
+					return "ok"
+				end if
+			end repeat
+		end repeat
+	end tell
+	return ""
+end run
+EOS
+}
+
+# Everything through the last sentinel goes. A no-op when the sentinel is absent,
+# so this can never eat a title we did not write, and it collapses a doubled
+# marker instead of nesting it.
+strip_mark() { printf '%s' "${1##*"$WJ" }"; }
+
+# Mark a background tab in a shared window. Takes the already-parsed context so
+# the single-tab path costs no extra Apple Event. Returns 0 only when it marked,
+# which is how the caller knows to skip the (invisible) paint.
+mark_set() {
+  local t="$1" n="$2" sel="$3" ttl="$4" stripped
+  case $n in ''|*[!0-9]*) return 1 ;; esac
+  [ "$n" -le 1 ] && return 1
+  [ "$sel" = "true" ] && return 1
+  # Flag BEFORE the title. A flag with no marker costs one wasted read; a marker
+  # with no flag is invisible to every cleanup path and strands the dot.
+  : >"$STATE_DIR/$t.mark" || return 1
+  stripped=$(strip_mark "$ttl")
+  write_title "/dev/$t" "$MARK$WJ $stripped" >/dev/null
+}
+
+# Strip only, never restore. Returns non-zero without dropping the flag when
+# Terminal did not answer, so the next hook retries instead of leaving the dot
+# stranded with nothing left that knows to remove it.
+mark_clear() {
+  local t="$1" ctx n sel foc ttl stripped
+  [ -f "$STATE_DIR/$t.mark" ] || [ "${2:-}" = "force" ] || return 0
+  ctx=$(tab_ctx "/dev/$t")
+  [ -z "$ctx" ] && return 1
+  IFS=$'\t' read -r n sel foc ttl <<<"$ctx"
+  case $ttl in
+    *"$WJ"*)
+      stripped=$(strip_mark "$ttl")
+      # Never blank a tab's name. If the title was nothing but our marker, leave
+      # it rather than writing an empty custom title.
+      [ -n "$stripped" ] && write_title "/dev/$t" "$stripped" >/dev/null
+      ;;
+  esac
+  rm -f "$STATE_DIR/$t.mark"
+}
+
 # Record the window's true background once, so we can always get back to it.
 remember_original() {
   local t="$1" orig
@@ -198,6 +306,7 @@ rest_window() {
     color=$(cat "$STATE_DIR/$t.orig" 2>/dev/null)
   fi
   [ -n "$color" ] && write_bg "/dev/$t" $color >/dev/null
+  mark_clear "$t"
   rm -f "$STATE_DIR/$t.unread"
 }
 
@@ -239,15 +348,24 @@ case "${1:-set}" in
     t=$(session_tty) || exit 0
     remember_original "$t" || exit 0 # not a Terminal.app tab
 
+    # One Apple Event answers both questions the Stop hook has: is the user
+    # looking at this tab, and does it share a window. Replaces the separate
+    # focused_tty call so the single-tab path costs no more than it did before.
+    ctx=$(tab_ctx "/dev/$t")
+    IFS=$'\t' read -r ntabs seltab foctab ttl <<<"$ctx"
+
     # Already looking at it, so nothing was missed. Do not light it up.
-    if [ "$(focused_tty)" = "/dev/$t" ]; then rest_window "$t"; exit 0; fi
+    if [ "$foctab" = "true" ]; then rest_window "$t"; exit 0; fi
 
     row=$(assignment "$t") || row=""
     hex=$(printf '%s' "$row" | cut -f1)
     [ -z "$hex" ] && hex="$DEFAULT_HEX"
 
     touch "$STATE_DIR/$t.unread"
-    write_bg "/dev/$t" $(scale16 "$hex" "$ATTN_PCT") >/dev/null
+    # In a shared window the wash is invisible while it matters and would flash
+    # at you a beat after you click the tab, so mark the tab bar instead of it.
+    mark_set "$t" "$ntabs" "$seltab" "$ttl" \
+      || write_bg "/dev/$t" $(scale16 "$hex" "$ATTN_PCT") >/dev/null
     start_watcher
     ;;
 
@@ -290,6 +408,20 @@ case "${1:-set}" in
           tty_alive "$b" || rm -f "$STATE_DIR/$b".*
         done
       fi
+
+      # Claude Code may rewrite the title just after Stop and wipe the marker.
+      # Re-assert; strip-then-prepend makes it idempotent. Flag-gated, so an
+      # unmarked (single-tab) unread costs nothing here.
+      for f in "${unread[@]}"; do
+        b=${f##*/}; b=${b%.unread}
+        if [ -f "$STATE_DIR/$b.mark" ]; then
+          mctx=$(tab_ctx "/dev/$b")
+          if [ -n "$mctx" ]; then
+            IFS=$'\t' read -r mn ms mf mt <<<"$mctx"
+            mark_set "$b" "$mn" "$ms" "$mt"
+          fi
+        fi
+      done
 
       ft=$(focused_tty)
       [ -n "$ft" ] && [ -f "$STATE_DIR/${ft#/dev/}.unread" ] && rest_window "${ft#/dev/}"
@@ -340,6 +472,7 @@ case "${1:-set}" in
           [ -z "$dev" ] && continue
           b="${dev#/dev/}"
           remember_original "$b" || continue
+          mark_clear "$b" force
           rest_window "$b"
           r=$(assignment "$b") || r=""
           printf '  %-9s %s\n' "$b" "${r:+$(printf '%s' "$r" | cut -f3)}"
@@ -365,6 +498,7 @@ case "${1:-set}" in
         for f in "$STATE_DIR"/ttys*.brand; do
           b=$(basename "$f" .brand)
           u=""; [ -f "$STATE_DIR/$b.unread" ] && u="  <- UNREAD"
+          [ -f "$STATE_DIR/$b.mark" ] && u="$u (tab-bar $MARK)"
           printf '  %-9s %-22s orig=%s%s\n' "$b" "$(cut -f3 <"$f")" "$(cat "$STATE_DIR/$b.orig" 2>/dev/null)" "$u"
         done
         ;;
