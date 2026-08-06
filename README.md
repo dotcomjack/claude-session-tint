@@ -9,6 +9,8 @@ it.
 If you run one Claude Code session, you do not need this. If you run eight, you
 are currently alt-tabbing through all of them to find the one that finished.
 
+![Six terminal windows tinted by project, one lit because its response finished](docs/demo.png)
+
 ```
 ,api        tag this window "API"        (no turn, no tokens, no reply)
 ,           show the palette

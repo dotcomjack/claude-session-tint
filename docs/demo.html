@@ -1,0 +1,67 @@
+<!doctype html><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}
+body{background:#0d0d0f;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;padding:44px;width:1200px}
+h1{color:#f2f2f2;font-size:21px;font-weight:600}
+.sub{color:#8a8a8a;font-size:14px;margin:7px 0 30px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.win{border-radius:8px;overflow:hidden;border:1px solid #2a2a2e;position:relative}
+.win.lit{border-color:#D9B44A}
+.bar{background:#1c1c1f;padding:7px 11px;display:flex;align-items:center;gap:8px}
+.dots{display:flex;gap:5px} .dots i{width:9px;height:9px;border-radius:999px;background:#3a3a3e;display:block}
+.chip{width:8px;height:8px;border-radius:2px;display:block;margin-left:3px}
+.title{color:#c9c9c9;font-size:12px;font-family:Monaco,monospace}
+.body{padding:13px;height:112px;font-family:Monaco,monospace;font-size:11.5px;color:#e8e8e8}
+.l{margin-bottom:5px} .dim{color:#9a9a9a} .cur{color:#7a7a7a}
+.badge{position:absolute;top:8px;right:9px;background:#D9B44A;color:#1a1408;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}
+</style><body>
+<h1>Know which Claude Code session needs you.</h1>
+<div class="sub">Each window wears its project color. It brightens when a response lands unseen, and drops back the moment you focus it.</div>
+<div class="grid">
+  <div class="win">
+    <div class="bar"><span class="dots"><i></i><i></i><i></i></span>
+      <span class="chip" style="background:#A3D8E1"></span><span class="title">api</span></div>
+    <div class="body" style="background:rgb(35,47,49)">
+      <div class="l dim">~/src/api</div><div class="l">$ npm run build</div><div class="l cur">&#9613;</div>
+    </div>
+    
+  </div>
+  <div class="win">
+    <div class="bar"><span class="dots"><i></i><i></i><i></i></span>
+      <span class="chip" style="background:#6FB07A"></span><span class="title">web</span></div>
+    <div class="body" style="background:rgb(24,38,26)">
+      <div class="l dim">~/src/web</div><div class="l">$ git push origin main</div><div class="l cur">&#9613;</div>
+    </div>
+    
+  </div>
+  <div class="win">
+    <div class="bar"><span class="dots"><i></i><i></i><i></i></span>
+      <span class="chip" style="background:#C4744A"></span><span class="title">mobile</span></div>
+    <div class="body" style="background:rgb(43,25,16)">
+      <div class="l dim">~/src/mobile</div><div class="l">$ xcodebuild -scheme App</div><div class="l cur">&#9613;</div>
+    </div>
+    
+  </div>
+  <div class="win lit">
+    <div class="bar"><span class="dots"><i></i><i></i><i></i></span>
+      <span class="chip" style="background:#D9B44A"></span><span class="title">docs</span></div>
+    <div class="body" style="background:rgb(104,86,35)">
+      <div class="l dim">~/src/docs</div><div class="l">Done. 3 files changed.</div><div class="l cur">&#9613;</div>
+    </div>
+    <div class="badge">response ready</div>
+  </div>
+  <div class="win">
+    <div class="bar"><span class="dots"><i></i><i></i><i></i></span>
+      <span class="chip" style="background:#B07AC4"></span><span class="title">infra</span></div>
+    <div class="body" style="background:rgb(38,26,43)">
+      <div class="l dim">~/src/infra</div><div class="l">$ terraform plan</div><div class="l cur">&#9613;</div>
+    </div>
+    
+  </div>
+  <div class="win">
+    <div class="bar"><span class="dots"><i></i><i></i><i></i></span>
+      <span class="chip" style="background:#46C8B8"></span><span class="title">tooling</span></div>
+    <div class="body" style="background:rgb(15,44,40)">
+      <div class="l dim">~/src/tooling</div><div class="l">$ ./build.sh</div><div class="l cur">&#9613;</div>
+    </div>
+    
+  </div></div></body>
