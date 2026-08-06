@@ -1,4 +1,4 @@
-# tabtint
+# claude-session-tint
 
 **Know which Claude Code session needs you.**
 
@@ -90,10 +90,12 @@ background color, and no way to color a tab. See "Adding a terminal" below.
 Requires macOS, Claude Code, and `jq`.
 
 ```bash
-git clone https://github.com/dotcomjack/tabtint.git
-cd tabtint
+git clone https://github.com/dotcomjack/claude-session-tint.git
+cd claude-session-tint
 ./install.sh
 ```
+
+The installed command is `tabtint`, kept short because you type it a lot.
 
 The installer **merges** into `~/.claude/settings.json`, it does not replace it.
 Your existing hooks are preserved, the file is backed up to
