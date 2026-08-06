@@ -89,15 +89,32 @@ background color, and no way to color a tab. See "Adding a terminal" below.
 
 ## Install
 
-Requires macOS, Claude Code, and `jq`.
+Requires macOS and Claude Code.
+
+**As a plugin (recommended).** From inside Claude Code:
+
+```
+/plugin marketplace add dotcomjack/claude-session-tint
+/plugin install claude-session-tint@dotcomjack
+```
+
+That is the whole install. Hooks and the `/tabtint` command register themselves,
+and a starter palette ships with the plugin, so there is nothing to copy and no
+settings file to edit. Uninstall with `/plugin uninstall claude-session-tint`.
+
+Your palette lives at `~/.claude/tabtint-palette.conf`, outside the plugin
+directory, so it survives plugin updates.
+
+<details>
+<summary><b>Manual install instead</b> (no plugin system, adds a shell command)</summary>
+
+Requires `jq`.
 
 ```bash
 git clone https://github.com/dotcomjack/claude-session-tint.git
 cd claude-session-tint
 ./install.sh
 ```
-
-The installed command is `tabtint`, kept short because you type it a lot.
 
 The installer **merges** into `~/.claude/settings.json`, it does not replace it.
 Your existing hooks are preserved, the file is backed up to
@@ -106,6 +123,15 @@ anything is written. Re-running is safe.
 
 ```bash
 ./install.sh --uninstall     # restores every window it touched, then removes itself
+```
+
+</details>
+
+The plugin puts `tabtint` on the Bash tool's PATH. To also use it from your own
+shell, symlink it:
+
+```bash
+ln -sf ~/.claude/plugins/cache/dotcomjack/claude-session-tint/*/bin/tabtint ~/.local/bin/tabtint
 ```
 
 ---

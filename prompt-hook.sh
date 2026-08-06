@@ -40,7 +40,10 @@
 
 set -uo pipefail
 
-TAB="$HOME/.claude/hooks/tabtint.sh"
+# Resolve tabtint.sh next to this script rather than at a fixed path. That makes
+# the same file work as a plugin (both scripts sit in the plugin root, which
+# moves on every update) and as a manual install (both in ~/.claude/hooks/).
+TAB="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/tabtint.sh"
 
 payload=$(cat 2>/dev/null) || exit 0
 [ -n "$payload" ] || exit 0

@@ -33,7 +33,14 @@
 set -uo pipefail
 
 STATE_DIR="$HOME/.claude/state/tabtint"
+
+# Your palette lives in ~/.claude so it survives plugin updates, which replace
+# the plugin directory wholesale. Fall back to the palette bundled next to this
+# script so a fresh plugin install works with no setup step.
 BRANDS_FILE="$HOME/.claude/tabtint-palette.conf"
+if [ ! -r "$BRANDS_FILE" ]; then
+  BRANDS_FILE="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/palette.conf"
+fi
 LOCK_DIR="$STATE_DIR/.watcher.lock"
 IDLE_FLAG="$STATE_DIR/.idle-enabled"
 
