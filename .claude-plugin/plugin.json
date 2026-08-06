@@ -1,7 +1,7 @@
 {
   "name": "claude-session-tint",
   "displayName": "Claude Session Tint",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Know which Claude Code session needs you. Tints a Terminal.app window by project and brightens it when a response lands unseen.",
   "author": {
     "name": "DotcomJack",

@@ -67,6 +67,32 @@ pattern.
 Because it paints the window body, lit windows are obvious in Mission Control
 and cmd-tab, not just when the window is already visible.
 
+### Multiple tabs in one window
+
+Terminal draws only the **selected** tab's body, and it gives the tab bar no
+colour of its own. So painting a background tab would be invisible exactly when
+you need it, and selecting that tab would clear it before you ever saw it.
+
+For a tab that shares a window, the signal moves to the one thing that does
+reach the tab bar: a dot in front of the tab title.
+
+```
+  ● api          <- finished, you have not looked
+    web
+    docs         <- selected
+```
+
+The dot is stripped the moment you select the tab. It is never stored anywhere:
+a zero-width sentinel marks our own prefix so it can be removed without keeping
+a copy of your title, which means it can never overwrite something you set with
+`/rename`. Change the glyph with `TABTINT_MARK`.
+
+One-tab windows are unaffected and still get the colour wash.
+
+If you do not see the dot, your profile has the title turned off: Terminal >
+Settings > Profiles > Window > Title, enable "Custom title". AppleScript cannot
+read that checkbox, so the tool cannot warn you automatically.
+
 ---
 
 ## Terminal support, honestly
