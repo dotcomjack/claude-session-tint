@@ -136,6 +136,15 @@ settings file to edit. Uninstall with `/plugin uninstall claude-session-tint`.
 Your palette lives at `~/.claude/tabtint-palette.conf`, outside the plugin
 directory, so it survives plugin updates.
 
+**Homebrew**, if you only want the `tabtint` shell command:
+
+```bash
+brew install dotcomjack/tap/claude-session-tint
+```
+
+That gives you the command but not the hooks, so windows will not light up on
+their own until you also install the plugin above.
+
 <details>
 <summary><b>Manual install instead</b> (no plugin system, adds a shell command)</summary>
 
