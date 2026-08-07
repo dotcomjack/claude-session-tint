@@ -206,16 +206,16 @@ on run argv
 	set TB to tab
 	tell application "Terminal"
 		set fm to frontmost
-		repeat with i from 1 to (count of windows)
-			set w to item i of windows
-			set n to (count of tabs of w)
+		set i to 0
+		repeat with w in windows
+			set i to i + 1
 			repeat with t in tabs of w
 				if tty of t is (item 1 of argv) then
 					set ttl to ""
 					try
 						set ttl to custom title of t
 					end try
-					return (n as string) & TB & ((selected of t) as string) & TB & ((fm and i is 1 and (selected of t)) as string) & TB & ttl
+					return ((count of tabs of w) as string) & TB & ((selected of t) as string) & TB & ((fm and i is 1 and (selected of t)) as string) & TB & ttl
 				end if
 			end repeat
 		end repeat
@@ -256,10 +256,14 @@ mark_set() {
   case $n in ''|*[!0-9]*) return 1 ;; esac
   [ "$n" -le 1 ] && return 1
   [ "$sel" = "true" ] && return 1
+  # Nothing to prepend to. A lone marker would BE the whole title, and
+  # mark_clear refuses to blank a tab's name, so that dot would strand with no
+  # way back. Decline and let the caller paint instead.
+  stripped=$(strip_mark "$ttl")
+  [ -z "$stripped" ] && return 1
   # Flag BEFORE the title. A flag with no marker costs one wasted read; a marker
   # with no flag is invisible to every cleanup path and strands the dot.
   : >"$STATE_DIR/$t.mark" || return 1
-  stripped=$(strip_mark "$ttl")
   write_title "/dev/$t" "$MARK$WJ $stripped" >/dev/null
 }
 
@@ -306,8 +310,9 @@ rest_window() {
     color=$(cat "$STATE_DIR/$t.orig" 2>/dev/null)
   fi
   [ -n "$color" ] && write_bg "/dev/$t" $color >/dev/null
-  mark_clear "$t"
-  rm -f "$STATE_DIR/$t.unread"
+  # Keep .unread when the marker could not be removed, so the watcher stays
+  # alive and retries instead of exiting with the dot still on the tab.
+  if mark_clear "$t"; then rm -f "$STATE_DIR/$t.unread"; fi
 }
 
 purge_dead() {
@@ -349,8 +354,10 @@ case "${1:-set}" in
     remember_original "$t" || exit 0 # not a Terminal.app tab
 
     # One Apple Event answers both questions the Stop hook has: is the user
-    # looking at this tab, and does it share a window. Replaces the separate
-    # focused_tty call so the single-tab path costs no more than it did before.
+    # looking at this tab, and does it share a window. It replaces focused_tty,
+    # which could bail on "not frontmost" without touching a window, so this
+    # walk costs roughly 400ms against that call's 80ms even on a one-tab
+    # window. One event instead of two, but not free.
     ctx=$(tab_ctx "/dev/$t")
     IFS=$'\t' read -r ntabs seltab foctab ttl <<<"$ctx"
 
