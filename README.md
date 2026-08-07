@@ -58,6 +58,14 @@ You can use this shape for any in-session command: toggling a flag, bumping a
 counter, kicking off a build. `prompt-hook.sh` is 100 lines and is the whole
 pattern.
 
+**One caveat worth knowing before you build on it.** The gate only fires on a
+prompt you submit at an idle input box. If you type `,api` while a turn is
+already running, the message is delivered to the model mid-turn and never
+reaches `UserPromptSubmit` at all, so it lands in the transcript as an ordinary
+prompt and costs a turn. That is a property of the hook, not of this script, and
+it applies to any `UserPromptSubmit` command you write. Wait for the turn to
+finish.
+
 ---
 
 ## What it looks like

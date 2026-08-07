@@ -243,23 +243,36 @@ end run
 EOS
 }
 
-# Everything through the last sentinel goes. A no-op when the sentinel is absent,
-# so this can never eat a title we did not write, and it collapses a doubled
-# marker instead of nesting it.
 # Strip our own marker prefix, and only ours. The marker is always
-# "<glyph><WJ><space>" at position 0, so a WORD JOINER that shows up later in a
-# title cannot be ours. The previous form was `${1##*"$WJ" }`, an unanchored
-# longest-match, which would truncate a user title that happened to contain a
-# WJ-space sequence anywhere. Requiring the WJ inside the first few bytes keeps
-# it glyph-agnostic (TABTINT_MARK can be a multi-byte emoji) without that.
+# "<glyph><WJ><space>" at position 0, so a WORD JOINER later in a title is not
+# ours and must survive.
+#
+# Two earlier forms were wrong. `${1##*"$WJ" }` was an unanchored longest-match
+# and truncated any title containing a WJ-space pair. Replacing it with a
+# `${#pre} -le 8` length guard traded that for a worse bug: ${#var} counts
+# CHARACTERS under a UTF-8 locale but BYTES under C/POSIX, and hooks routinely
+# inherit an unset locale. Any TABTINT_MARK over 8 bytes (every ZWJ emoji, and
+# "●●●") then failed to strip, so the watcher's re-assert prepended a fresh
+# marker every poll and the tab title grew without bound until you focused it.
+#
+# So test the SHAPE of the prefix, not its length. A marker glyph never contains
+# an ASCII letter, digit or space; a real title fragment essentially always does.
+# That is locale-independent and stays glyph-agnostic. The exact-match fast path
+# runs first so even an alphanumeric TABTINT_MARK works, and only a marker
+# written with a since-changed alphanumeric glyph falls through.
 strip_mark() {
   local s="$1" pre
+  case $s in
+    "$MARK$WJ "*) printf '%s' "${s#"$MARK$WJ "}"; return ;;
+  esac
   pre=${s%%"$WJ" *}
-  if [ "$pre" != "$s" ] && [ ${#pre} -le 8 ]; then
-    printf '%s' "${s#*"$WJ" }"
-  else
-    printf '%s' "$s"
+  if [ "$pre" != "$s" ]; then
+    case $pre in
+      *[A-Za-z0-9\ ]*) ;; # letters, digits or a space before the sentinel: not ours
+      *) printf '%s' "${s#*"$WJ" }"; return ;;
+    esac
   fi
+  printf '%s' "$s"
 }
 
 # Mark a background tab in a shared window. Takes the already-parsed context so
