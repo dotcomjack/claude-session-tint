@@ -246,7 +246,21 @@ EOS
 # Everything through the last sentinel goes. A no-op when the sentinel is absent,
 # so this can never eat a title we did not write, and it collapses a doubled
 # marker instead of nesting it.
-strip_mark() { printf '%s' "${1##*"$WJ" }"; }
+# Strip our own marker prefix, and only ours. The marker is always
+# "<glyph><WJ><space>" at position 0, so a WORD JOINER that shows up later in a
+# title cannot be ours. The previous form was `${1##*"$WJ" }`, an unanchored
+# longest-match, which would truncate a user title that happened to contain a
+# WJ-space sequence anywhere. Requiring the WJ inside the first few bytes keeps
+# it glyph-agnostic (TABTINT_MARK can be a multi-byte emoji) without that.
+strip_mark() {
+  local s="$1" pre
+  pre=${s%%"$WJ" *}
+  if [ "$pre" != "$s" ] && [ ${#pre} -le 8 ]; then
+    printf '%s' "${s#*"$WJ" }"
+  else
+    printf '%s' "$s"
+  fi
+}
 
 # Mark a background tab in a shared window. Takes the already-parsed context so
 # the single-tab path costs no extra Apple Event. Returns 0 only when it marked,
