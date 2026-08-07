@@ -9,7 +9,7 @@ it.
 If you run one Claude Code session, you do not need this. If you run eight, you
 are currently alt-tabbing through all of them to find the one that finished.
 
-![Six terminal windows tinted by project, one lit because its response finished](docs/demo.png)
+![Six terminal windows tinted by project. One brightens when its response finishes, then drops back when you look at it](docs/demo.gif)
 
 ```
 ,api        tag this window "API"        (no turn, no tokens, no reply)
@@ -44,10 +44,15 @@ echoed back into the transcript.
 
 Two details that are easy to get wrong:
 
-- **The hook must be synchronous.** An `async: true` hook returns after the
-  prompt has already gone to the model, so it cannot gate anything.
-- **Exit 2 as well as printing the JSON.** With exit 0 there is an earlier
-  success branch that can return before the blocking decision is applied.
+- **The hook must be synchronous.** The `async` flag's own schema reads "If
+  true, hook runs in background without blocking", so an async hook returns
+  after the prompt has already gone to the model and cannot gate anything.
+  Nothing warns you. It just stops working.
+- **Exit 2 as well as printing the JSON.** With exit 0 you take a success
+  branch that tacks a "completed" line onto your output and reports the
+  outcome as success. Exit 2 skips it, and since `decision: "block"` has
+  already set the blocking error, the `[<command>]: <stderr>` wrapper never
+  replaces your text either.
 
 You can use this shape for any in-session command: toggling a flag, bumping a
 counter, kicking off a build. `prompt-hook.sh` is 100 lines and is the whole

@@ -26,17 +26,34 @@
 # decision:"block" also supplies the reason text directly, instead of Claude
 # Code synthesising "[<command>]: <stderr>" around it.
 #
-# We still exit 2 as well as printing the JSON. That is deliberate: with exit 0
-# there is an earlier success branch (gated on `de.status===0`) that can yield
-# before the blocking decision is applied. Exit 2 skips it, and because
-# decision:"block" already populated blockingError, the exit-2 stderr fallback
-# (`if (status===2 && !fe.blockingError)`) never fires either.
+# We still exit 2 as well as printing the JSON. Re-verified against 2.1.223,
+# and the mechanism is narrower than an earlier version of this comment claimed.
+# With exit 0 you land in
+#
+#     if (zU(_e) && !_e.suppressOutput && Ce && de.status === 0) {
+#       ... yield { ...fe, message: fe.message || <hook_success>, outcome: "success" }
+#       return
+#     }
+#
+# which spreads the parsed output, so the block is NOT discarded: blockingError
+# still rides along. What you get instead is a spurious "<hook name> completed"
+# line and an outcome reported as success. Exit 2 skips that branch entirely.
+#
+# Exit 2 is also safe here rather than merely tolerable. The stderr fallback is
+#
+#     if (de.status === 2 && !fe.blockingError)
+#       fe.blockingError = { blockingError: `[${ne}]: ${de.stderr || "No stderr output"}` }
+#
+# and decision:"block" has already populated blockingError, so the `[<cmd>]:
+# <stderr>` wrapper never replaces our text. `reason` is used verbatim.
 #
 # Everything that is not a comma line exits 0 and is passed through untouched.
 # Every failure path also exits 0. This must never eat a real prompt.
 #
-# Must be wired NON-async in settings.json. An async hook runs in the
-# background, so its result arrives too late to gate the prompt.
+# Must be wired NON-async in settings.json. The config flag's own schema says
+# it plainly, "If true, hook runs in background without blocking", so an async
+# hook's result arrives after the prompt already reached the model and cannot
+# gate anything. Nothing warns you; the hook just silently stops working.
 
 set -uo pipefail
 
