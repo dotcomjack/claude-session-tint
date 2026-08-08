@@ -1,4 +1,5 @@
 #!/bin/bash
+# █ dcj · dotcomjack.com · MIT
 # Regression tests for strip_mark, the tab-bar marker parser.
 #
 # This one function has now been wrong twice, both times in a way that only

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# █ dcj · dotcomjack.com · MIT
 """Render docs/demo.gif.
 
 Every colour in the output is computed with the same arithmetic the tool uses,

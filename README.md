@@ -1,3 +1,15 @@
+<!-- dcj-tag:start -->
+```
+██████╗  ██████╗     ██╗
+██╔══██╗██╔════╝     ██║
+██║  ██║██║          ██║
+██║  ██║██║     ██   ██║
+██████╔╝╚██████╗╚█████╔╝
+╚═════╝  ╚═════╝ ╚════╝
+d o t c o m j a c k
+```
+<!-- dcj-tag:end -->
+
 # claude-session-tint
 
 **Know which Claude Code session needs you.**

@@ -1,4 +1,5 @@
 #!/bin/bash
+# █ dcj · dotcomjack.com · MIT
 # tabtint installer.  ./install.sh   |   ./install.sh --uninstall
 #
 # Merges into ~/.claude/settings.json rather than replacing it, and backs the
