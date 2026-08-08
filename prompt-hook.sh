@@ -1,4 +1,5 @@
 #!/bin/bash
+# █ dcj · dotcomjack.com · MIT
 # tab-tag-prompt.sh  -  UserPromptSubmit hook  (companion to tabtint.sh)
 #
 # Tag the current Terminal window from inside a running Claude session without

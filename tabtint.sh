@@ -1,4 +1,5 @@
 #!/bin/bash
+# █ dcj · dotcomjack.com · MIT
 # tabtint.sh  (drive it with the `tabtint` command)
 #
 # Purely cosmetic Terminal.app window coloring:
