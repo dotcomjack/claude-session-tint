@@ -71,7 +71,27 @@ mkdir -p "$STATE_DIR"
 
 # Hard wall clock cap, so a hung Apple Event (a TCC dialog waiting on a click,
 # say) can never wedge a hook.
-osa() { perl -e 'alarm 15; exec @ARGV' osascript "$@" 2>/dev/null; }
+#
+# And never LAUNCH Terminal. `tell application "Terminal"` starts the app when it
+# is not running, and an app started by an Apple Event inherits the sender's
+# environment. Sent from a hook, that hands every tab opened afterwards the
+# hook's whole environment, Claude Code's session identity variables included,
+# so the Claude in each new tab believes it is a child of that one session:
+# they all share one session name and none of them saves a transcript. If
+# Terminal is not running there is no window to tint, so there is nothing to do.
+terminal_running() { pgrep -xq "${TABTINT_TERMINAL_PROC:-Terminal}"; }
+
+osa() {
+  terminal_running || return 1
+  perl -e 'alarm 15; exec @ARGV' osascript "$@" 2>/dev/null
+}
+
+# A background or headless Claude session has no tab of its own, so the hook
+# modes have nothing to tint and no reason to send Terminal a single Apple
+# Event. Claude Code marks those sessions with CLAUDE_CODE_SESSION_ATTENDED=0.
+# Unset means attended: a hand-run `tabtint.sh` and an older Claude Code behave
+# exactly as before.
+unattended() { [ "${CLAUDE_CODE_SESSION_ATTENDED:-1}" = "0" ]; }
 
 # "#A3D8E1" plus a percentage to the 16-bit triple AppleScript wants. Pure bash
 # arithmetic, no subprocess, because this runs on every Stop.
@@ -378,6 +398,7 @@ EOS
 case "${1:-set}" in
 
   set) # Stop hook
+    unattended && exit 0
     t=$(session_tty) || exit 0
     remember_original "$t" || exit 0 # not a Terminal.app tab
 
@@ -405,6 +426,7 @@ case "${1:-set}" in
     ;;
 
   clear | rest) # UserPromptSubmit / SessionStart hooks
+    unattended && exit 0
     t=$(session_tty) || exit 0
     remember_original "$t" || exit 0
     rest_window "$t"
