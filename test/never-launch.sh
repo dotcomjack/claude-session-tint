@@ -16,6 +16,8 @@
 #   2. target app running      -> osascript IS executed
 #   3. the same holds for the public helpers built on osa (all_ttys, tab_ctx)
 #   4. no Apple Event in tabtint.sh bypasses osa()
+#   5. in an unattended session (CLAUDE_CODE_SESSION_ATTENDED=0) the hook modes
+#      send nothing even when the app IS running; attended and unset behave as before
 #
 # Usage: ./test/never-launch.sh
 
@@ -85,6 +87,20 @@ for fn in all_ttys focused_tty "tab_ctx /dev/ttys999" "write_title /dev/ttys999 
   run tabtint-no-such-app $fn >/dev/null
   [ "$(calls)" = 0 ] && ok "app not running: ${fn%% *} sends nothing" || no "app not running: ${fn%% *} sent an Apple Event"
 done
+
+# 5. an unattended (background or headless) session's hooks do nothing at all
+for v in 0; do
+  (export CLAUDE_CODE_SESSION_ATTENDED=$v; source "$WORK/funcs.sh" 2>/dev/null; unattended) && ok "ATTENDED=0 reads as unattended" || no "ATTENDED=0 did not read as unattended"
+done
+(export CLAUDE_CODE_SESSION_ATTENDED=1; source "$WORK/funcs.sh" 2>/dev/null; unattended) && no "ATTENDED=1 read as unattended" || ok "ATTENDED=1 is attended"
+(unset CLAUDE_CODE_SESSION_ATTENDED; source "$WORK/funcs.sh" 2>/dev/null; unattended) && no "an unset marker read as unattended" || ok "an unset marker is attended (hand runs, older Claude Code)"
+for mode in set clear rest; do
+  : >"$WORK/calls"
+  PATH="$WORK/bin:$PATH" HOME="$WORK" TABTINT_TERMINAL_PROC=tabtint-standin CLAUDE_CODE_SESSION_ATTENDED=0 bash "$SRC" "$mode" </dev/null >/dev/null 2>&1; rc=$?
+  [ "$(calls)" = 0 ] && [ "$rc" = 0 ] && ok "unattended: the $mode hook sends nothing and exits 0" || no "unattended: the $mode hook sent $(calls) Apple Event(s), exit $rc"
+done
+hooked=$(sed -n '/^# ---------------* modes ---$/,$p' "$SRC" | grep -A1 -E '^  (set|clear \| rest)\) ' | grep -c 'unattended && exit 0')
+[ "$hooked" = 2 ] && ok "both hook entry points check for an unattended session first" || no "$hooked of 2 hook entry points check for an unattended session first"
 
 # 4. nothing reaches osascript except through osa()
 direct=$(grep -n 'osascript' "$SRC" | grep -v '^[0-9]*:[[:space:]]*#' | grep -vc "exec @ARGV' osascript")

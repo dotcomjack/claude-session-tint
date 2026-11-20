@@ -86,6 +86,13 @@ osa() {
   perl -e 'alarm 15; exec @ARGV' osascript "$@" 2>/dev/null
 }
 
+# A background or headless Claude session has no tab of its own, so the hook
+# modes have nothing to tint and no reason to send Terminal a single Apple
+# Event. Claude Code marks those sessions with CLAUDE_CODE_SESSION_ATTENDED=0.
+# Unset means attended: a hand-run `tabtint.sh` and an older Claude Code behave
+# exactly as before.
+unattended() { [ "${CLAUDE_CODE_SESSION_ATTENDED:-1}" = "0" ]; }
+
 # "#A3D8E1" plus a percentage to the 16-bit triple AppleScript wants. Pure bash
 # arithmetic, no subprocess, because this runs on every Stop.
 scale16() {
@@ -391,6 +398,7 @@ EOS
 case "${1:-set}" in
 
   set) # Stop hook
+    unattended && exit 0
     t=$(session_tty) || exit 0
     remember_original "$t" || exit 0 # not a Terminal.app tab
 
@@ -418,6 +426,7 @@ case "${1:-set}" in
     ;;
 
   clear | rest) # UserPromptSubmit / SessionStart hooks
+    unattended && exit 0
     t=$(session_tty) || exit 0
     remember_original "$t" || exit 0
     rest_window "$t"
